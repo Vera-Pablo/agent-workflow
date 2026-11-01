@@ -96,6 +96,11 @@ node scripts/install.mjs --apply    # instala para todos los agentes
 
 Las skills quedan enlazadas al repo: un `git pull` las actualiza. Detalles en `scripts/README.md`.
 
+## Usar en un proyecto
+
+Abrí el proyecto con cualquier agente y pedí `/init-project` (o "inicializá este proyecto con
+agent-workflow"). Analiza el código, te propone la capa de proyecto y la crea con tu OK.
+
 ## Estructura
 
 ```
@@ -109,9 +114,9 @@ agent-workflow/
 │   ├── sdd-constitution, sdd-spec, sdd-clarify, sdd-plan, sdd-tasks,
 │   │   sdd-implement, sdd-validate, sdd-change   # Fases del flujo SDD
 │   ├── feature/               # Flujo liviano (≤ 3 tareas)
+│   ├── init-project/          # Crea la capa de proyecto (AGENTS.md, MEMORY.md, specs/...)
 │   └── status/                # Estado y próximo paso
 ├── roles/                     # coordinator, planner, implementer, reviewer (formato neutral)
-├── templates/                 # Plantillas de la capa de proyecto                  (paso 6)
 ├── adapters/                  # Traducción a cada agente: claude, opencode, codex, copilot, antigravity
 ├── scripts/                   # install.mjs (instalar / desinstalar, con simulación)
 └── agent-workflow.config.json # Agentes destino y modelo por nivel
@@ -123,6 +128,6 @@ agent-workflow/
 - [x] Paso 3 · Skills del flujo (trivial / feature / SDD)
 - [x] Paso 4 · Roles y permisos
 - [x] Paso 5 · Instalador para cada agente
-- [ ] Paso 6 · `/init-project` y plantillas
+- [x] Paso 6 · `/init-project` y plantillas
 - [ ] Paso 7 · Migración de proyectos
 - [ ] Paso 8 · Prueba real de punta a punta
