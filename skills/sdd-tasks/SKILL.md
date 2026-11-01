@@ -15,6 +15,15 @@ Fase 4 del flujo (ver skill `sdd`). Requiere plan con `Estado: aprobado`.
 - Termina en un único commit (mensaje propuesto incluido).
 - Orden: dominio y tests → datos → integración → UI. Primero lo que no depende de nada.
 
+## Complejidad y quién implementa
+Cada tarea declara su complejidad. Ante la duda, la más alta.
+
+| Complejidad | Cuándo | Implementa |
+|---|---|---|
+| **simple** | Patrón ya existente en el código, 1-2 archivos, sin reglas de negocio nuevas (ej. un campo más, un test de borde, una consulta calcada de otra) | Modelo gratuito/económico |
+| **media** | Lógica de negocio acotada y clara, 2-4 archivos | Modelo estándar (gratuito bueno o Claude) |
+| **compleja** | Cualquiera de: reglas de negocio centrales, datos/migraciones/RLS, sincronización o concurrencia, seguridad, más de 4 archivos, diseño no trivial | **Claude** |
+
 ## Pasos
 1. Crear `tasks.md` con la plantilla `../sdd/assets/tasks.md`.
 2. Verificar cobertura: cada requisito y criterio de la spec está en al menos una tarea.
