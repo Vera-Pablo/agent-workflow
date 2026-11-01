@@ -85,11 +85,23 @@ Si a mitad de camino cambiás un requisito, primero se actualiza la spec y despu
 Si se corta la sesión o cambiás de agente, el comando `status` lee los archivos y te dice
 exactamente dónde quedó y cuál es el próximo paso.
 
+## Instalación
+
+Requiere Node.js. Desde la carpeta del repo:
+
+```powershell
+node scripts/install.mjs            # simulación: muestra qué va a hacer
+node scripts/install.mjs --apply    # instala para todos los agentes
+```
+
+Las skills quedan enlazadas al repo: un `git pull` las actualiza. Detalles en `scripts/README.md`.
+
 ## Estructura
 
 ```
 agent-workflow/
 ├── core/
+│   ├── bootstrap.md           # Reglas siempre activas que se instalan en cada agente
 │   └── constitution.md        # Principios innegociables (todos los proyectos)
 ├── skills/                    # Skills portables (estándar Agent Skills, SKILL.md)
 │   ├── code-standards/        # Estándares de código + referencias por tema
@@ -100,8 +112,9 @@ agent-workflow/
 │   └── status/                # Estado y próximo paso
 ├── roles/                     # coordinator, planner, implementer, reviewer (formato neutral)
 ├── templates/                 # Plantillas de la capa de proyecto                  (paso 6)
-├── adapters/                  # Generadores por agente                             (paso 5)
-└── scripts/                   # install / sync (Node.js)                           (paso 5)
+├── adapters/                  # Traducción a cada agente: claude, opencode, codex, copilot, antigravity
+├── scripts/                   # install.mjs (instalar / desinstalar, con simulación)
+└── agent-workflow.config.json # Agentes destino y modelo por nivel
 ```
 
 ## Estado
@@ -109,7 +122,7 @@ agent-workflow/
 - [x] Paso 2 · Constitución y estándares de código
 - [x] Paso 3 · Skills del flujo (trivial / feature / SDD)
 - [x] Paso 4 · Roles y permisos
-- [ ] Paso 5 · Instalador para cada agente
+- [x] Paso 5 · Instalador para cada agente
 - [ ] Paso 6 · `/init-project` y plantillas
 - [ ] Paso 7 · Migración de proyectos
 - [ ] Paso 8 · Prueba real de punta a punta

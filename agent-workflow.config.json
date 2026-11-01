@@ -1,0 +1,9 @@
+{
+  "$comment": "Configuración del instalador. Para cambios locales sin commitear, copiá este archivo como agent-workflow.local.json.",
+  "targets": ["claude", "opencode", "codex", "copilot", "antigravity"],
+  "models": {
+    "claude":   { "strong": "inherit", "standard": "sonnet", "cheap": "haiku" },
+    "opencode": { "strong": null, "standard": null, "cheap": null },
+    "copilot":  { "strong": null, "standard": null, "cheap": null }
+  }
+}
