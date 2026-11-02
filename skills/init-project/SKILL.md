@@ -52,6 +52,8 @@ Mostrar al desarrollador:
 - `specs/README.md` con `assets/specs-README.md`. Si ya hay specs en otro formato, no moverlas:
   anotarlas en `MEMORY.md` como pendiente de migración.
 - `docs/constitution.md`: ejecutar la skill `sdd-constitution`.
+- `.gitignore`: asegurar que ignora la configuración local de los agentes
+  (`.claude/settings.local.json`, `.env*`). Agregar solo lo que falte.
 
 ### 4. Cerrar
 - Verificar que los comandos de `AGENTS.md` funcionan (correr al menos tests y lint/analyze).
