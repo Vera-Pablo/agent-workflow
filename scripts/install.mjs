@@ -53,7 +53,14 @@ async function loadAdapters(targets) {
 
 /** Acciones comunes: el repo y las skills quedan disponibles en ~/.agents (estándar abierto). */
 function hubActions(ctx) {
-  const actions = [{ type: 'link', path: ctx.hubDir, target: ctx.repoDir }];
+  const ownedRoot = path.join(ctx.repoDir, 'skills');
+  const prune = (dir) => ({ type: 'prune', path: dir, ownedRoot });
+  const actions = [
+    prune(path.join(ctx.home, '.agents', 'skills')),
+    prune(path.join(ctx.home, '.claude', 'skills')),
+    prune(path.join(ctx.home, '.gemini', 'config', 'skills')),
+    { type: 'link', path: ctx.hubDir, target: ctx.repoDir },
+  ];
   for (const skill of ctx.skills) {
     actions.push({ type: 'link', path: path.join(ctx.home, '.agents', 'skills', skill), target: path.join(ctx.repoDir, 'skills', skill) });
   }

@@ -27,7 +27,7 @@ Ante la duda, el nivel más alto. Decile al desarrollador qué nivel elegiste y 
 | 5 | Implementar | `sdd-implement` | código + tests, 1 tarea a la vez | **Reviewer + OK del desarrollador → commit** |
 | 6 | Validar | `sdd-validate` | informe requisito por requisito | **OK del desarrollador → spec validada** |
 | — | Cambio | `sdd-change` | spec actualizada primero | Vuelve a la fase que corresponda |
-| — | Estado | `status` | resumen y próximo paso | — |
+| — | Estado | `sdd-status` | resumen y próximo paso | — |
 
 **Nunca se saltea una fase ni un punto de control.** Sin spec aprobada no hay plan;
 sin plan aprobado no hay tareas; sin tarea aprobada no hay código.

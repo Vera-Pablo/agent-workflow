@@ -1,5 +1,5 @@
 ---
-name: status
+name: sdd-status
 description: Informa el estado del trabajo en el proyecto: specs activas, fase de cada una, progreso de tareas, bloqueos y el próximo paso exacto. Usar al retomar una sesión, al cambiar de agente o cuando el desarrollador pregunte dónde estamos.
 ---
 

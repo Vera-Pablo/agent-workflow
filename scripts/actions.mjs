@@ -12,11 +12,13 @@ export function describe(action) {
     case 'file': return `archivo  ${action.path}`;
     case 'block': return `bloque   ${action.path}`;
     case 'json-ensure': return `ajuste   ${action.path} (${action.summary})`;
+    case 'prune': return `limpieza ${action.path} (enlaces a skills que ya no existen)`;
     default: throw new Error(`Acción desconocida: ${action.type}`);
   }
 }
 
 export function apply(action) {
+  if (action.type === 'prune') return applyPrune(action);
   ensureParent(path.dirname(action.path));
   switch (action.type) {
     case 'link': return applyLink(action);
@@ -33,8 +35,26 @@ export function revert(action) {
     case 'file': return isGenerated(action.path) ? (fs.rmSync(action.path), 'quitado') : 'sin cambios';
     case 'block': return removeBlock(action.path);
     case 'json-ensure': return revertJsonEnsure(action);
+    case 'prune': return 'sin cambios';
     default: throw new Error(`Acción desconocida: ${action.type}`);
   }
+}
+
+/** Quita enlaces que apuntan a skills del repo que ya no existen (renombradas o borradas). */
+function applyPrune({ path: dir, ownedRoot }) {
+  if (!fs.existsSync(dir)) return 'sin cambios';
+  const removed = [];
+  for (const entry of fs.readdirSync(dir)) {
+    const linkPath = path.join(dir, entry);
+    let target;
+    try {
+      if (!fs.lstatSync(linkPath).isSymbolicLink()) continue;
+      target = path.resolve(dir, fs.readlinkSync(linkPath));
+    } catch { continue; }
+    const owned = target.toLowerCase().startsWith(path.resolve(ownedRoot).toLowerCase() + path.sep);
+    if (owned && !fs.existsSync(target)) { removeLink(linkPath); removed.push(entry); }
+  }
+  return removed.length ? `quitados: ${removed.join(', ')}` : 'sin cambios';
 }
 
 /** Crea la carpeta destino; si hay un enlace roto en el camino, lo informa con claridad. */

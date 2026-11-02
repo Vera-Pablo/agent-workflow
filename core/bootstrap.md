@@ -5,7 +5,7 @@ los proyectos. Las preguntas o charlas que no cambian código se responden norma
 
 ## Siempre
 1. **Al iniciar en un proyecto:** leé `AGENTS.md`, `MEMORY.md` y `docs/constitution.md` si
-   existen. Si hay trabajo en curso, usá la skill `status`.
+   existen. Si hay trabajo en curso, usá la skill `sdd-status`.
 2. **Ante cualquier pedido de cambio:** usá la skill `sdd` para elegir el nivel
    (trivial / feature / SDD) **antes** de tocar código, y decí qué nivel elegiste.
 3. **Antes de escribir, modificar o revisar código:** usá la skill `code-standards`.

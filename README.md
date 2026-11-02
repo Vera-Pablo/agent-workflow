@@ -82,7 +82,7 @@ Pedido: *"Quiero poder registrar ventas a crédito."*
 ```
 
 Si a mitad de camino cambiás un requisito, primero se actualiza la spec y después el resto.
-Si se corta la sesión o cambiás de agente, el comando `status` lee los archivos y te dice
+Si se corta la sesión o cambiás de agente, la skill `sdd-status` lee los archivos y te dice
 exactamente dónde quedó y cuál es el próximo paso.
 
 ## Instalación
@@ -115,7 +115,7 @@ agent-workflow/
 │   │   sdd-implement, sdd-validate, sdd-change   # Fases del flujo SDD
 │   ├── feature/               # Flujo liviano (≤ 3 tareas)
 │   ├── init-project/          # Crea la capa de proyecto (AGENTS.md, MEMORY.md, specs/...)
-│   └── status/                # Estado y próximo paso
+│   └── sdd-status/            # Estado y próximo paso
 ├── roles/                     # coordinator, planner, implementer, reviewer (formato neutral)
 ├── adapters/                  # Traducción a cada agente: claude, opencode, codex, copilot, antigravity
 ├── scripts/                   # install.mjs (instalar / desinstalar, con simulación)

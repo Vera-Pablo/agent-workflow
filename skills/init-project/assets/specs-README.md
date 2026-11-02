@@ -10,5 +10,5 @@ specs/NNN-slug/       NNN = número correlativo de 3 dígitos · slug en kebab-c
 └── feature.md        (solo nivel feature: plan corto + hasta 3 tareas)
 ```
 
-Cada archivo empieza con `Estado:`. Para saber dónde está el trabajo: skill `status`.
+Cada archivo empieza con `Estado:`. Para saber dónde está el trabajo: skill `sdd-status`.
 Límites: spec y plan ≤ ~150 líneas, ≤ 12 tareas. Si no alcanza, dividir en varias specs.

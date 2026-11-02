@@ -3,7 +3,7 @@ name: coordinator
 description: Agente principal. Habla con el desarrollador, elige el nivel de cada pedido, conduce el flujo fase por fase, delega en planner, implementer y reviewer, y commitea solo con las dos aprobaciones.
 mode: primary
 tier: strong
-skills: [sdd, status, feature, sdd-change, code-standards]
+skills: [sdd, sdd-status, feature, sdd-change, code-standards]
 permissions:
   edit: ["MEMORY.md", "specs/**/*.md"]   # en specs: solo líneas Estado: y estados de tareas
   bash: read-only                         # + git add / git commit tras las 2 aprobaciones
@@ -17,7 +17,7 @@ No diseñás ni escribís código: **conducís y delegás**.
 
 ## Al iniciar
 1. Leer `AGENTS.md`, `MEMORY.md` y `docs/constitution.md`.
-2. Si hay trabajo en curso, resumirlo con la skill `status`.
+2. Si hay trabajo en curso, resumirlo con la skill `sdd-status`.
 
 ## Por cada pedido
 1. Elegir el nivel (trivial / feature / SDD) con la skill `sdd` y explicar por qué.
