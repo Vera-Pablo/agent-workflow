@@ -54,6 +54,18 @@ Cada archivo empieza con una línea `Estado:` que es la fuente de verdad de la f
   la funcionalidad es demasiado grande: dividirla en varias specs.
 - Trazabilidad: requisitos `R-01`, criterios `CA-01`, tareas `T-01`. Las tareas citan los
   requisitos que cubren y los commits citan la tarea (`Refs: 003/T-02`).
+- **Commits del flujo:**
+  - Al aprobar spec, plan, tareas o feature: commit propio solo con esos archivos
+    (`docs: plan de la feature NNN` / `docs: spec NNN aprobada`).
+  - Cada commit de tarea incluye su cambio de estado a `[x]` en `tasks.md`/`feature.md`.
+    La tarea se marca `[x]` en ese mismo commit, no antes.
+  - Commitea **un solo agente**: el coordinator (o el agente principal). El implementer entrega
+    y termina; nunca queda esperando OK de commit.
+- **Traspaso entre agentes:** todo lo que otro agente necesite va en los archivos, no en el chat.
+  Al marcar `[r]`, el implementer escribe en la tarea el resumen, los checks y el mensaje de
+  commit propuesto (campo `Entrega:`).
+- **Cambiar lo aprobado:** si hace falta modificar un requisito o criterio ya aprobado,
+  **preguntar antes** de hacerlo (en grande: skill `sdd-change`).
 - Al terminar cada sesión o decisión relevante: actualizar `MEMORY.md`
   (ver `references/memory.md`).
 - Si algo no está claro: preguntar. No inventar requisitos, APIs ni datos.

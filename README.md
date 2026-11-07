@@ -129,5 +129,5 @@ agent-workflow/
 - [x] Paso 4 · Roles y permisos
 - [x] Paso 5 · Instalador para cada agente
 - [x] Paso 6 · `/init-project` y plantillas
-- [ ] Paso 7 · Migración de proyectos
-- [ ] Paso 8 · Prueba real de punta a punta
+- [ ] Paso 7 · Migración de proyectos (gestor-negocio ✅ · YacaJobs_v3 y tercer proyecto pendientes)
+- [x] Paso 8 · Prueba real de punta a punta (gestor-negocio, feature 001)

@@ -13,5 +13,6 @@ Leyenda: [ ] pendiente · [~] en curso · [r] en revisión · [x] hecha · [!] b
 - Test primero: <qué test escribir y qué debe verificar>
 - Hecho cuando: <criterio verificable>
 - Commit: `feat(alcance): ...`
+- Entrega: <lo completa el implementer al marcar [r]: archivos, checks, mensaje de commit propuesto>
 
 ## T-02 · ...

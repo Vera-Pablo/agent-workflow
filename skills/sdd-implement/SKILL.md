@@ -22,15 +22,21 @@ Fase 5 del flujo (ver skill `sdd`). **Una tarea por vez.** Cargar la skill `code
 8. Correr **todos** los tests, linter y typecheck del proyecto.
 
 ## Revisión
-9. Marcar `[r]` y pedir revisión: si existe el rol/subagente `reviewer`, delegarle;
-   si no, hacer una pasada de revisión separada siguiendo `code-standards/references/review.md`.
-10. Si el veredicto es CAMBIOS REQUERIDOS: corregir y volver al paso 8.
+9. Marcar `[r]` y completar el campo **Entrega** de la tarea: archivos, resultado de checks y
+   mensaje de commit propuesto (con `Refs: NNN/T-xx`).
+   - Si quien implementó **no es el agente principal** (ej. un modelo gratuito en otra
+     herramienta): su trabajo termina acá. No pide OK ni commitea.
+10. Pedir revisión: si existe el rol/subagente `reviewer`, delegarle; si no, una pasada separada
+    siguiendo `code-standards/references/review.md`.
+    **Revisión cruzada:** lo que implementó un modelo `cheap`/gratuito lo revisa Claude.
+11. Si el veredicto es CAMBIOS REQUERIDOS: corregir y volver al paso 8.
 
-## Commit (solo con las dos aprobaciones)
-11. Presentar al desarrollador: resumen del cambio, archivos tocados, resultado de checks,
-    veredicto del reviewer y mensaje de commit propuesto.
-12. **Esperar su OK explícito.** Recién entonces: commit con solo los archivos de la tarea.
-13. Marcar `[x]` y actualizar `MEMORY.md` si hubo una decisión o aprendizaje.
+## Commit (agente principal, con las dos aprobaciones)
+12. Presentar al desarrollador: resumen, archivos, checks, veredicto del reviewer y el mensaje
+    de commit del campo Entrega.
+13. **Esperar su OK explícito.** Recién entonces: marcar `[x]` y commitear los archivos de la
+    tarea **más** su `tasks.md`/`feature.md`, agregándolos por nombre.
+14. Actualizar `MEMORY.md` si hubo una decisión o aprendizaje.
 
 ## Prohibido
 Avanzar a otra tarea en la misma pasada, tocar archivos fuera de la tarea, modificar tests

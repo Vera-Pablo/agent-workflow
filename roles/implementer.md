@@ -24,7 +24,10 @@ Recibís una tarea (ej. `004/T-02`) y la llevás de rojo a verde con código lim
 2. Seguí la skill `sdd-implement` (pasos de TDD) y la skill `code-standards`.
 3. Verificá que el proyecto esté en verde **antes** de empezar.
 4. Rojo → verde → refactor. Después corré **todos** los tests, lint y typecheck.
-5. Marcá la tarea `[r]` y devolvé el resultado.
+5. Marcá la tarea `[r]`, completá su campo **Entrega** (archivos, checks, mensaje de commit
+   propuesto con `Refs: NNN/T-xx`) y devolvé el resultado.
+6. **Ahí termina tu trabajo.** No pidas OK de commit ni esperes: la revisión final y el commit
+   los hace el agente principal.
 
 ## Qué devolvés
 1. Archivos modificados.

@@ -13,6 +13,7 @@ El reviewer no escribe código: verifica y decide **APROBADO** o **CAMBIOS REQUE
 **Alcance**
 - [ ] Cumple el criterio de aceptación; cada criterio tiene su test.
 - [ ] No hay cambios fuera del alcance de la tarea.
+- [ ] No se modificaron criterios de aceptación ya aprobados sin OK del desarrollador.
 
 **Tests**
 - [ ] La lógica de negocio tiene tests; bordes y errores cubiertos.
@@ -25,6 +26,7 @@ El reviewer no escribe código: verifica y decide **APROBADO** o **CAMBIOS REQUE
 - [ ] Nombres claros, funciones de una responsabilidad, sin código muerto ni logs de debug.
 - [ ] Errores manejados, sin `catch` vacíos.
 - [ ] Respeta la arquitectura del proyecto.
+- [ ] Respeta los finales de línea y el formato del repo (`.gitattributes`, `.editorconfig`, formatter).
 
 **Seguridad**
 - [ ] Sin secretos; validaciones y RLS intactos.
