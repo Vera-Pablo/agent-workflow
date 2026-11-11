@@ -8,7 +8,8 @@ Cuatro roles con responsabilidades y permisos separados. Cada archivo está en f
 | `coordinator` | principal | fuerte | `MEMORY.md`, líneas `Estado:` | lectura + git | ✅ solo con las 2 aprobaciones |
 | `planner` | subagente | fuerte | `specs/**`, `docs/constitution.md` | lectura | ❌ |
 | `implementer` | subagente | según complejidad: simple → económico · media → estándar · **compleja → Claude** | código y tests de la tarea, su línea en `tasks.md` | lectura + checks | ❌ |
-| `reviewer` | subagente | fuerte / estándar | nada | lectura + checks | ❌ |
+| `reviewer` | subagente | estándar | nada | lectura + checks | ❌ |
+| `reviewer-complex` | subagente | fuerte | nada | lectura + checks | ❌ (solo tareas compleja) |
 
 ## Campos del frontmatter
 

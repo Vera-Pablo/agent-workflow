@@ -7,6 +7,7 @@ Leyenda: [ ] pendiente · [~] en curso · [r] en revisión · [x] hecha · [!] b
 ## T-01 · <título corto en imperativo>
 - Estado: [ ]
 - Complejidad: simple | media | compleja  → implementa: <agente según skill sdd-tasks>
+- Tipo: código | documentación  → documentación implementa siempre con el modelo gratuito de OpenCode
 - Cubre: R-01, CA-01
 - Depende de: —
 - Archivos: `ruta/archivo`, `ruta/archivo_test`

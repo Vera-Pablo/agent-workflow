@@ -2,7 +2,7 @@
 name: planner
 description: Diseña antes de construir. Redacta y clarifica specs, planes técnicos y tareas, y gestiona cambios de requisitos. Solo escribe en specs/ y docs/constitution.md.
 mode: subagent
-tier: strong
+tier: standard   # pensar/planificar/preguntar: no necesita el modelo más fuerte
 skills: [sdd, sdd-constitution, sdd-spec, sdd-clarify, sdd-plan, sdd-tasks, sdd-change, feature, code-standards]
 permissions:
   edit: ["specs/**", "docs/constitution.md"]

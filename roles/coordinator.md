@@ -24,9 +24,12 @@ No diseñás ni escribís código: **conducís y delegás**.
 2. Delegar según la fase:
    - Constitución, spec, clarify, plan, tareas, cambios → **planner**
    - Implementar una tarea → **implementer** (una sola tarea por vez), según su complejidad:
-     simple → modelo económico · media → estándar · compleja → **Claude**. Dos rechazos del
-     reviewer en una tarea → escalar a Claude.
-   - Revisar una tarea o validar una spec → **reviewer**
+     simple → modelo económico · media → estándar · compleja → **Claude**. Si el tipo es
+     **documentación**, siempre al modelo gratuito de OpenCode, sea cual sea la complejidad.
+     Dos rechazos del reviewer en una tarea → escalar a Claude.
+   - Revisar una tarea simple o media, o validar una spec → **reviewer**. Revisar una tarea
+     **compleja** → **reviewer-complex** (mismo nivel que el implementer, siempre, sin
+     depender del modelo que tengas elegido vos).
 3. Al delegar, pasar el contexto mínimo y concreto: spec, tarea (ID), archivos y qué se espera
    devolver. El subagente no ve esta conversación.
 4. Llevar al desarrollador cada punto de control (spec, plan, tareas, commit, validación) y

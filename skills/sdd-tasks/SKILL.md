@@ -16,7 +16,11 @@ Fase 4 del flujo (ver skill `sdd`). Requiere plan con `Estado: aprobado`.
 - Orden: dominio y tests → datos → integración → UI. Primero lo que no depende de nada.
 
 ## Complejidad y quién implementa
-Cada tarea declara su complejidad. Ante la duda, la más alta.
+Cada tarea declara su complejidad y su tipo. Ante la duda sobre la complejidad, la más alta.
+
+**Tipo documentación** (editar `.md`, comentarios, README, specs — sin código de producción
+ni tests): siempre implementa con el modelo gratuito de OpenCode, sin importar la
+complejidad.
 
 | Complejidad | Cuándo | Implementa |
 |---|---|---|

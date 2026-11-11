@@ -12,5 +12,5 @@ Fecha: AAAA-MM-DD
 <Qué existente se usa.>
 
 ## Tareas (máx. 3)
-- [ ] **T-01** <título> · complejidad: simple|media|compleja · archivos: ... · test primero: ... · commit: `...`
+- [ ] **T-01** <título> · complejidad: simple|media|compleja · tipo: código|documentación · archivos: ... · test primero: ... · commit: `...`
   - Entrega: <lo completa el implementer al marcar [r]>
