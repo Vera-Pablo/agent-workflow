@@ -122,12 +122,3 @@ agent-workflow/
 └── agent-workflow.config.json # Agentes destino y modelo por nivel
 ```
 
-## Estado
-
-- [x] Paso 2 · Constitución y estándares de código
-- [x] Paso 3 · Skills del flujo (trivial / feature / SDD)
-- [x] Paso 4 · Roles y permisos
-- [x] Paso 5 · Instalador para cada agente
-- [x] Paso 6 · `/init-project` y plantillas
-- [ ] Paso 7 · Migración de proyectos (gestor-negocio ✅ · YacaJobs_v3 y tercer proyecto pendientes)
-- [x] Paso 8 · Prueba real de punta a punta (gestor-negocio, feature 001)
