@@ -4,9 +4,9 @@ import path from 'node:path';
 import { GENERATED_NOTE, buildGlobalInstructions, yamlString } from '../scripts/lib.mjs';
 
 const TOOLS = {
-  planner: 'Read, Grep, Glob, Write, Edit',
-  implementer: 'Read, Grep, Glob, Write, Edit, Bash',
-  reviewer: 'Read, Grep, Glob, Bash',
+  planner: 'Read, Grep, Glob, Write, Edit, Skill',
+  implementer: 'Read, Grep, Glob, Write, Edit, Bash, Skill',
+  reviewer: 'Read, Grep, Glob, Bash, Skill',
 };
 
 export default {
@@ -33,9 +33,10 @@ export default {
         '---',
         `name: ${role.name}`,
         `description: ${yamlString(role.description)}`,
-        `tools: ${TOOLS[role.name] ?? 'Read, Grep, Glob'}`,
+        `tools: ${TOOLS[role.name.replace('-complex', '')] ?? 'Read, Grep, Glob, Skill'}`,
         model ? `model: ${model}` : null,
-        role.skills?.length ? `skills: ${role.skills.join(', ')}` : null,
+        // Sin `skills:` — en Claude Code precarga el texto COMPLETO de cada skill en cada
+        // invocación. Con la herramienta Skill el subagente carga solo la que necesita.
         '---',
       ].filter(Boolean).join('\n');
       actions.push({

@@ -6,7 +6,7 @@ tier: strong
 skills: [sdd, sdd-status, feature, sdd-change, code-standards]
 permissions:
   edit: ["MEMORY.md", "specs/**/*.md"]   # en specs: solo líneas Estado: y estados de tareas
-  bash: read-only                         # + git add / git commit tras las 2 aprobaciones
+  bash: read-only                         # + git add / git commit tras las 2 aprobaciones · + opencode run (docs)
   commit: after-approval
 ---
 
@@ -26,6 +26,8 @@ No diseñás ni escribís código: **conducís y delegás**.
    - Implementar una tarea → **implementer** (una sola tarea por vez), según su complejidad:
      simple → modelo económico · media → estándar · compleja → **Claude**. Si el tipo es
      **documentación**, siempre al modelo gratuito de OpenCode, sea cual sea la complejidad.
+     En Claude Code no hay subagente gratuito: ejecutalo por Bash con
+     `opencode run -m opencode/deepseek-v4.1-flash-free "..."` (nunca con el implementer).
      Dos rechazos del reviewer en una tarea → escalar a Claude.
    - Revisar una tarea simple o media, o validar una spec → **reviewer**. Revisar una tarea
      **compleja** → **reviewer-complex** (mismo nivel que el implementer, siempre, sin
