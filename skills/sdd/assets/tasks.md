@@ -6,8 +6,8 @@ Leyenda: [ ] pendiente · [~] en curso · [r] en revisión · [x] hecha · [!] b
 
 ## T-01 · <título corto en imperativo>
 - Estado: [ ]
-- Complejidad: simple | media | compleja  → implementa: <agente según skill sdd-tasks>
-- Tipo: código | documentación  → documentación implementa siempre con el modelo gratuito de OpenCode
+- Complejidad: simple (Haiku) | media (Sonnet) | compleja (Opus)  → implementa: <agente según skill sdd-tasks>
+- Tipo: código | administrativa  → administrativa la hace la primera IA gratuita con cuota (OpenCode → Copilot → Gemini; Haiku si se agotaron)
 - Cubre: R-01, CA-01
 - Depende de: —
 - Archivos: `ruta/archivo`, `ruta/archivo_test`

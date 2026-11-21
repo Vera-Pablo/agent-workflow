@@ -10,8 +10,8 @@ Fase 5 del flujo (ver skill `sdd`). **Una tarea por vez.** Cargar la skill `code
 ## Antes
 1. Elegir la primera tarea `[ ]` cuyas dependencias estén `[x]` (o la que indique el desarrollador).
 2. Leer la tarea, los requisitos que cubre, el plan y `MEMORY.md`. Marcar `[~]`.
-3. Respetar la complejidad de la tarea: una tarea **compleja** solo la implementa Claude. Si
-   otro agente la recibe, debe avisar y no empezarla.
+3. Respetar la complejidad de la tarea: simple → **Haiku** · media → **Sonnet** ·
+   compleja → **Opus**. Si tu modelo es inferior al exigido, avisá y no empieces.
 4. Verificar que el proyecto está en verde (tests y análisis) antes de tocar nada.
 
 ## TDD

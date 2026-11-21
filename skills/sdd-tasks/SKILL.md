@@ -16,17 +16,19 @@ Fase 4 del flujo (ver skill `sdd`). Requiere plan con `Estado: aprobado`.
 - Orden: dominio y tests → datos → integración → UI. Primero lo que no depende de nada.
 
 ## Complejidad y quién implementa
-Cada tarea declara su complejidad y su tipo. Ante la duda sobre la complejidad, la más alta.
-
-**Tipo documentación** (editar `.md`, comentarios, README, specs — sin código de producción
-ni tests): siempre implementa con el modelo gratuito de OpenCode, sin importar la
-complejidad.
+Cada tarea declara su complejidad y su tipo (`código | administrativa`).
 
 | Complejidad | Cuándo | Implementa |
 |---|---|---|
-| **simple** | Patrón ya existente en el código, 1-2 archivos, sin reglas de negocio nuevas (ej. un campo más, un test de borde, una consulta calcada de otra) | Modelo gratuito/económico |
-| **media** | Lógica de negocio acotada y clara, 2-4 archivos | Modelo estándar (gratuito bueno o Claude) |
-| **compleja** | Cualquiera de: reglas de negocio centrales, datos/migraciones/RLS, sincronización o concurrencia, seguridad, más de 4 archivos, diseño no trivial | **Claude** |
+| **simple** | Un solo módulo, sin tocar otros; funciones sencillas sin impacto en seguridad ni escalabilidad | Haiku |
+| **media** | 2 a 3 módulos; funciones medianas con lógica de negocio acotada | Sonnet |
+| **compleja** | Más de 3 módulos, o cualquier cantidad con lógica estricta o seguridad (reglas de negocio centrales, datos/migraciones/RLS, concurrencia, auth) | Opus |
+
+- Si una tarea cae en dos niveles, se toma el más alto.
+- **Administrativas** (terminal, git, escribir `.md`/specs): no las hace Claude; van a la
+  primera IA gratuita con cuota diaria: OpenCode (deepseek) → Copilot → Gemini; si las tres
+  agotaron cuota, Haiku.
+- Dos rechazos del reviewer en una tarea `simple` o `media`: escalar un nivel de modelo.
 
 ## Pasos
 1. Crear `tasks.md` con la plantilla `../sdd/assets/tasks.md`.

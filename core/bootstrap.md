@@ -11,8 +11,12 @@ los proyectos. Las preguntas o charlas que no cambian código se responden norma
    (trivial / feature / SDD) **antes** de tocar código, y decí qué nivel elegiste.
 3. **Antes de escribir, modificar o revisar código:** usá la skill `code-standards`.
 4. **Commits:** nunca sin veredicto APROBADO del reviewer y OK explícito del desarrollador.
-5. **Complejidad:** las tareas `compleja` solo las implementa Claude. Si no sos Claude y te
-   toca una, no la empieces: avisá.
+5. **Complejidad:** simple → Haiku · media → Sonnet · compleja → Opus. Las `compleja` solo
+   las implementa Opus: si tu modelo es inferior al exigido, no la empieces: avisá. Dos
+   rechazos del reviewer en simple/media → escalar un nivel. Las tareas **administrativas**
+   (terminal, git, escribir `.md`/specs) no las hace Claude: van a la primera IA gratuita
+   con cuota diaria, OpenCode (deepseek) → Copilot → Gemini; si las tres agotaron cuota,
+   Haiku.
 6. **Roles:** el agente principal es el **coordinator** (`{{ROLES}}/coordinator.md`).
    Si tu herramienta no tiene subagentes, cumplí los roles en secuencia y anuncialos al
    cambiar: `[planner]`, `[implementer]`, `[reviewer]` (definidos en `{{ROLES}}/`).
@@ -31,5 +35,8 @@ los proyectos. Las preguntas o charlas que no cambian código se responden norma
 - **Documentación en Claude Code:** no la escribas vos ni con subagentes Claude (consume tu
   cuota). Delegala al modelo gratuito: `opencode run -m opencode/deepseek-v4.1-flash-free
   "<instrucción + archivos>"` y después solo revisá el diff.
+- **Terminal en Claude Code:** no ejecutés `git`, tests ni builds vos. Pedile al
+  desarrollador que lo haga en Copilot (`@copilot git commit ...`, `@copilot npm test`, etc.)
+  o usá `opencode run` para comandos simples de shell. Claude solo lee resultados.
 
 Si una regla del proyecto contradice esta base, gana la más estricta.

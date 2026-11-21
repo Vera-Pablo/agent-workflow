@@ -44,7 +44,10 @@ Cada pedido se clasifica en un nivel:
 | **SDD** | Funcionalidad nueva, reglas de negocio, varias capas o datos | Fases completas (ver ejemplo) |
 
 Y cada tarea, según su complejidad, la implementa un modelo distinto:
-**simple** → modelo gratuito · **media** → modelo estándar · **compleja** → Claude.
+**simple** → Haiku · **media** → Sonnet · **compleja** → Opus (si cae en dos niveles, el más alto).
+Las tareas administrativas (terminal, git, escribir `.md`/specs) no las hace Claude: van a la
+primera IA gratuita con cuota diaria, OpenCode (deepseek) → Copilot → Gemini, y si las tres
+agotaron cuota, Haiku.
 
 ## Ejemplo del flujo
 
@@ -65,10 +68,10 @@ Pedido: *"Quiero poder registrar ventas a crédito."*
                  🛑 Vos aprobás el plan.
 
 5. TAREAS        Divide el plan en tareas de 20-30 min, cada una con su complejidad:
-                   T-01 Validar venta a crédito ............ compleja → Claude
-                   T-02 Calcular saldo del cliente ......... compleja → Claude
-                   T-03 Consultar saldo en repositorio ..... simple   → modelo gratuito
-                   T-04 Selector de cliente en la pantalla . media    → modelo estándar
+                   T-01 Validar venta a crédito ............ compleja → Opus
+                   T-02 Calcular saldo del cliente ......... compleja → Opus
+                   T-03 Consultar saldo en repositorio ..... simple   → Haiku
+                   T-04 Selector de cliente en la pantalla . media    → Sonnet
                  🛑 Vos aprobás las tareas.
 
 6. IMPLEMENTAR   Una tarea por vez:
