@@ -29,7 +29,7 @@ export default {
   id: 'opencode',
   label: 'OpenCode',
   plan(ctx) {
-    const base = path.join(ctx.home, '.config', 'opencode');
+    const base = path.join(ctx.root, '.config', 'opencode');
     const models = ctx.models.opencode ?? {};
     const actions = [
       { type: 'block', path: path.join(base, 'AGENTS.md'), content: buildGlobalInstructions(ctx) },

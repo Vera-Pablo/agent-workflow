@@ -59,9 +59,30 @@ export function yamlString(value) {
 /** Instrucciones globales: bootstrap + constitución, con la ruta real de los roles. */
 export function buildGlobalInstructions(ctx) {
   const bootstrap = fs.readFileSync(path.join(ctx.repoDir, 'core', 'bootstrap.md'), 'utf8')
-    .replaceAll('{{ROLES}}', toDisplayPath(path.join(ctx.hubDir, 'roles')));
+    .replaceAll('{{ROLES}}', toDisplayPath(ctx.rolesDir));
   const constitution = fs.readFileSync(path.join(ctx.repoDir, 'core', 'constitution.md'), 'utf8');
   return `${bootstrap.trim()}\n\n---\n\n${constitution.trim()}\n`;
 }
 
 export const toDisplayPath = (p) => p.replaceAll('\\', '/');
+
+// .git/info/exclude usa sintaxis de .gitignore: el bloque se marca con comentarios '#'.
+export const EXCLUDE_START = `# ${MARK}:start · generado, no editar a mano`;
+export const EXCLUDE_END = `# ${MARK}:end`;
+
+/** Reemplaza el bloque administrado por `entries`, salvo las que ya figuran fuera del bloque. */
+export function mergeExcludeBlock(current, entries) {
+  const outside = removeExcludeBlock(current);
+  const present = new Set(outside.split(/\r?\n/).map((line) => line.trim()));
+  const own = [...new Set(entries)].filter((entry) => !present.has(entry));
+  if (!own.length) return outside;
+  const block = `${[EXCLUDE_START, ...own, EXCLUDE_END].join('\n')}\n`;
+  return outside.trim() ? `${outside.replace(/\s*$/, '\n')}${block}` : block;
+}
+
+export function removeExcludeBlock(current) {
+  const start = current.indexOf(EXCLUDE_START);
+  const end = current.indexOf(EXCLUDE_END);
+  if (start === -1 || end === -1) return current;
+  return current.slice(0, start) + current.slice(end + EXCLUDE_END.length).replace(/^\r?\n/, '');
+}

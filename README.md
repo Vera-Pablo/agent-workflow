@@ -1,127 +1,163 @@
 # agent-workflow
 
-**Un flujo de trabajo profesional para programar con agentes de IA, sin vibe coding.**
+## Qué es el repo
 
-Este repo define *cómo* trabajan los agentes de código (Claude Code, OpenCode, Antigravity,
-Copilot, Codex) en cualquier proyecto: qué principios respetan, qué estándares de código
-cumplen, en qué fases avanzan y en qué momentos se detienen a esperar la aprobación del
-desarrollador.
+agent-workflow es un harness donde las IAs que elige el desarrollador asumen roles
+(`coordinator`, `planner`, `implementer`, `reviewer`, `reviewer-complex`) para llevar un
+módulo desde la idea hasta el producto testeado. Define principios, estándares, fases y
+permisos; el estado vive en archivos, así que se puede cambiar de agente sin perder el hilo.
+El agente nunca decide solo qué construir ni da algo por terminado sin el desarrollador.
 
-La idea central: **el agente nunca decide solo qué construir ni da algo por terminado sin vos.**
-Toda funcionalidad pasa por especificación, plan, tareas chicas con TDD, revisión de un
-reviewer y tu OK antes de cada commit. Como el estado vive en archivos, podés empezar con un
-agente y continuar con otro sin perder el hilo.
+## Qué hace
 
-## Qué incluye
+- **Niveles de cambio:** `trivial` (cambio directo), `feature` (hasta 3 tareas) y `SDD`
+  (spec → clarify → plan → tasks → implement → validate).
+- **Modelo por complejidad:** simple (1 módulo) → Haiku; media (2-3 módulos) → Sonnet;
+  compleja (>3 módulos o seguridad/lógica estricta) → Opus.
+- **Tareas administrativas** (terminal, git, `.md`): OpenCode (deepseek) → Copilot → Gemini;
+  si se agotó la cuota, Haiku.
+- **Activación por proyecto (opt-in):** cada repo decide si usa el workflow.
+- **Skills de la comunidad:** se suman a las skills propias del workflow.
+- **Modo autónomo** (`sdd-autonomo`): módulos simples sin el desarrollador, en una rama
+  creada por él y sin commitear.
 
-- **Constitución:** principios innegociables (TDD, tipado estricto, reutilizar antes de crear,
-  consultas precisas, clean code, un commit por tarea con doble aprobación).
-- **Estándares de código:** referencias concretas por tema (legibilidad, tests, tipos, datos,
-  commits, revisión).
-- **Skills del flujo:** Spec-Driven Development completo, un flujo liviano para cambios
-  medianos y un comando de estado. Siguen el estándar abierto Agent Skills, así que funcionan
-  en distintos agentes.
-- **Roles con permisos:** coordinator, planner, implementer y reviewer, cada uno con lo que
-  puede y no puede hacer.
+## Cómo funciona
 
-## Dos capas
+El workflow **no se activa solo**. En la máquina solo queda el comando `/init-workflow`. Al
+ejecutarlo dentro de un proyecto se instalan ahí, excluidos de git vía `.git/info/exclude`:
+`CLAUDE.local.md`, las skills enlazadas en `.claude/skills`, los subagentes de los roles en
+`.claude/agents` y `.claude/settings.local.json` (pide confirmación antes de commit/push).
+Después, `/init-project` crea `AGENTS.md`, `MEMORY.md`, `specs/` y la constitución del
+proyecto.
 
-| Capa | Dónde vive | Qué contiene |
-|---|---|---|
-| **Base (este repo)** | Se instala de forma global para cada agente | Constitución, estándares, skills del flujo, roles, plantillas |
-| **Proyecto** | En cada repo | `AGENTS.md`, `MEMORY.md`, `docs/constitution.md`, `specs/`, skills de dominio, MCP |
-
-Un proyecto puede **agregar** reglas a la base, nunca **relajarlas**.
-
-## Cómo trabaja
-
-Cada pedido se clasifica en un nivel:
-
-| Nivel | Cuándo | Flujo |
-|---|---|---|
-| **Trivial** | Typo, estilo, renombre local | Cambio directo → checks → revisión → OK → commit |
-| **Feature** | Cambio acotado (≤ 3 tareas), sin decisiones de arquitectura ni datos | Plan corto → tareas con TDD → revisión → OK → commit |
-| **SDD** | Funcionalidad nueva, reglas de negocio, varias capas o datos | Fases completas (ver ejemplo) |
-
-Y cada tarea, según su complejidad, la implementa un modelo distinto:
-**simple** → Haiku · **media** → Sonnet · **compleja** → Opus (si cae en dos niveles, el más alto).
-Las tareas administrativas (terminal, git, escribir `.md`/specs) no las hace Claude: van a la
-primera IA gratuita con cuota diaria, OpenCode (deepseek) → Copilot → Gemini, y si las tres
-agotaron cuota, Haiku.
-
-## Ejemplo del flujo
-
-Pedido: *"Quiero poder registrar ventas a crédito."*
+Ejemplo del flujo SDD: *"Quiero poder registrar ventas a crédito."*
 
 ```
 1. NIVEL         El coordinator lo clasifica como SDD: toca reglas de negocio y datos.
 
-2. SPEC          El planner te entrevista (¿límite de crédito? ¿se puede anular?) y redacta
-                 specs/004-ventas-credito/spec.md con requisitos verificables:
+2. SPEC          El planner entrevista y redacta specs/004-ventas-credito/spec.md con
+                 requisitos verificables:
                    R-01 Si la venta es a crédito sin cliente, el sistema debe rechazarla.
 
-3. CLARIFY       Audita su propia spec buscando ambigüedades y huecos.
-                 🛑 Vos aprobás la spec.
+3. CLARIFY       Se auditan ambigüedades y huecos.          🛑 Vos aprobás la spec.
 
-4. PLAN          Busca qué código ya existe para reutilizar y diseña el cómo:
-                 archivos por capa, funciones puras, consultas, estrategia de tests.
-                 🛑 Vos aprobás el plan.
+4. PLAN          Qué código reutilizar y cómo diseñarlo.    🛑 Vos aprobás el plan.
 
-5. TAREAS        Divide el plan en tareas de 20-30 min, cada una con su complejidad:
+5. TAREAS        Tareas de 20-30 min, cada una con su complejidad:
                    T-01 Validar venta a crédito ............ compleja → Opus
                    T-02 Calcular saldo del cliente ......... compleja → Opus
                    T-03 Consultar saldo en repositorio ..... simple   → Haiku
                    T-04 Selector de cliente en la pantalla . media    → Sonnet
-                 🛑 Vos aprobás las tareas.
+                                                             🛑 Vos aprobás las tareas.
 
-6. IMPLEMENTAR   Una tarea por vez:
-                   🔴 test que falla → 🟢 código mínimo → 🔧 refactor → todos los checks
-                   → el reviewer revisa el diff (APROBADO / CAMBIOS REQUERIDOS)
-                   → te muestra resumen, checks y mensaje de commit
-                 🛑 Vos das OK → commit → siguiente tarea.
+6. IMPLEMENTAR   Una por vez: test que falla → código mínimo → refactor → checks →
+                 revisión del diff (APROBADO / CAMBIOS REQUERIDOS) → resumen y commit.
+                                                             🛑 Vos das OK → commit.
 
-7. VALIDAR       Recorre cada requisito: qué test lo cubre y si se verificó funcionando.
-                 🛑 Vos validás la spec. Listo.
+7. VALIDAR       Cada requisito contra su test y su verificación funcional.
+                                                             🛑 Vos validás la spec.
 ```
 
-Si a mitad de camino cambiás un requisito, primero se actualiza la spec y después el resto.
-Si se corta la sesión o cambiás de agente, la skill `sdd-status` lee los archivos y te dice
-exactamente dónde quedó y cuál es el próximo paso.
+Regla central: **commits solo con veredicto APROBADO del reviewer y OK explícito del
+desarrollador**. Si cambia un requisito, primero se actualiza la spec; `sdd-status` retoma
+el trabajo leyendo los archivos.
 
-## Instalación
-
-Requiere Node.js. Desde la carpeta del repo:
-
-```powershell
-node scripts/install.mjs            # simulación: muestra qué va a hacer
-node scripts/install.mjs --apply    # instala para todos los agentes
-```
-
-Las skills quedan enlazadas al repo: un `git pull` las actualiza. Detalles en `scripts/README.md`.
-
-## Usar en un proyecto
-
-Abrí el proyecto con cualquier agente y pedí `/init-project` (o "inicializá este proyecto con
-agent-workflow"). Analiza el código, te propone la capa de proyecto y la crea con tu OK.
-
-## Estructura
+## Estructura y partes del directorio
 
 ```
 agent-workflow/
 ├── core/
-│   ├── bootstrap.md           # Reglas siempre activas que se instalan en cada agente
-│   └── constitution.md        # Principios innegociables (todos los proyectos)
-├── skills/                    # Skills portables (estándar Agent Skills, SKILL.md)
-│   ├── code-standards/        # Estándares de código + referencias por tema
-│   ├── sdd/                   # Orquestador: niveles, fases, puntos de control, plantillas
-│   ├── sdd-constitution, sdd-spec, sdd-clarify, sdd-plan, sdd-tasks,
-│   │   sdd-implement, sdd-validate, sdd-change   # Fases del flujo SDD
-│   ├── feature/               # Flujo liviano (≤ 3 tareas)
-│   ├── init-project/          # Crea la capa de proyecto (AGENTS.md, MEMORY.md, specs/...)
-│   └── sdd-status/            # Estado y próximo paso
-├── roles/                     # coordinator, planner, implementer, reviewer (formato neutral)
-├── adapters/                  # Traducción a cada agente: claude, opencode, codex, copilot, antigravity
-├── scripts/                   # install.mjs (instalar / desinstalar, con simulación)
-└── agent-workflow.config.json # Agentes destino y modelo por nivel
+│   ├── bootstrap.md            # reglas siempre activas que se instalan en cada agente
+│   └── constitution.md         # principios innegociables para todos los proyectos
+├── roles/                      # coordinator, planner, implementer, reviewer, reviewer-complex
+├── skills/
+│   ├── code-standards/         # estándares obligatorios antes de escribir o revisar código
+│   ├── feature/                # flujo liviano para cambios de hasta 3 tareas
+│   ├── init-project/           # crea AGENTS.md, MEMORY.md, specs/ y la constitución
+│   ├── init-workflow/          # activa el workflow en el proyecto actual
+│   ├── sdd/                    # orquestador de niveles, fases y puntos de control
+│   ├── sdd-autonomo/           # módulo simple de punta a punta sin el desarrollador
+│   ├── sdd-change/             # cambio de requisitos sobre una spec existente
+│   ├── sdd-clarify/            # auditoría de la spec hasta aprobarla
+│   ├── sdd-constitution/       # crea o revisa la constitución del proyecto
+│   ├── sdd-implement/          # implementa una tarea con TDD y la somete a revisión
+│   ├── sdd-plan/               # diseña el plan técnico de una spec aprobada
+│   ├── sdd-spec/               # redacta la especificación con requisitos verificables
+│   ├── sdd-status/             # informa el estado y el próximo paso exacto
+│   ├── sdd-tasks/              # divide el plan en tareas pequeñas y ordenadas
+│   └── sdd-validate/           # valida la implementación contra la spec
+├── community-skills/
+│   ├── claude/                 # skills de la comunidad para Claude Code
+│   ├── codex/                  # skills de la comunidad para Codex (aún no se instalan)
+│   └── shared/                 # skills de la comunidad para cualquier agente
+├── adapters/                   # traducción a claude, opencode, codex, copilot y antigravity
+├── scripts/
+│   ├── install.mjs             # CLI: instalar, desinstalar, modo global y por proyecto
+│   ├── project.mjs             # planificación y exclusiones del modo por proyecto
+│   ├── actions.mjs             # ejecuta enlaces, archivos, bloques y JSON
+│   └── lib.mjs                 # carga roles, skills y configuración
+├── tests/                      # tests de la instalación global mínima y por proyecto
+└── agent-workflow.config.json  # agentes destino y modelo por nivel
 ```
 
+## Cómo usarlo
+
+### 1. Instalar en la máquina
+
+Requiere Node.js. Desde la carpeta del repo:
+
+```powershell
+node scripts/install.mjs --init-only          # simulación: muestra qué haría
+node scripts/install.mjs --init-only --apply  # instala solo el comando /init-workflow
+```
+
+Para quitar una instalación global anterior:
+
+```powershell
+node scripts/install.mjs --uninstall --apply
+```
+
+### 2. Activar en cada proyecto que decidas
+
+```powershell
+/init-workflow
+
+# equivalente desde el proyecto:
+node <repo>/scripts/install.mjs --project           # simulación
+node <repo>/scripts/install.mjs --project --apply   # aplica
+```
+
+Revertir la activación:
+
+```powershell
+node <repo>/scripts/install.mjs --project --uninstall --apply
+```
+
+### 3. Agregar skills de la comunidad
+
+1. Copiá la carpeta de la skill (con su `SKILL.md`) en `community-skills/claude`,
+   `community-skills/codex` o `community-skills/shared`.
+2. Anotá su fuente y licencia.
+3. Leela antes de agregarla: es texto que la IA obedece.
+
+Se activan al correr `/init-workflow` o al reinstalar con `--project --apply`. Las de
+`codex/` aún no se instalan porque Codex no tiene modo por proyecto. Si el nombre choca con
+una skill del workflow, gana la del workflow.
+
+### 4. Usar el modo autónomo
+
+Creá la rama para el trabajo, pedí `/sdd-autonomo <módulo>` y, al volver, revisá
+`specs/<NNN>-<módulo>/informe-autonomo.md`. El agente no commitea: las decisiones y los
+commits quedan en tus manos.
+
+### 5. Actualizar
+
+```powershell
+git pull
+```
+
+Las skills quedan enlazadas al repo, así que se actualizan con el `git pull`. Los subagentes (`.claude/agents`) y las reglas (`CLAUDE.local.md`) son copias generadas: si cambiaron `roles/` o `core/`, volvé a correr `node <repo>/scripts/install.mjs --project --apply` en cada proyecto (es idempotente).
+
+## Alcance actual
+
+El modo por proyecto soporta solo Claude Code.

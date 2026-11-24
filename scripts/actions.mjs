@@ -1,8 +1,8 @@
 // Ejecuta (o simula) las acciones que proponen los adaptadores.
-// Tipos: link · file · block · json-ensure. Nada se borra: lo existente se respalda.
+// Tipos: link · file · block · json-ensure · exclude · skip. Nada se borra: lo existente se respalda.
 import fs from 'node:fs';
 import path from 'node:path';
-import { BLOCK_START, BLOCK_END, GENERATED_NOTE } from './lib.mjs';
+import { BLOCK_START, BLOCK_END, GENERATED_NOTE, mergeExcludeBlock, removeExcludeBlock } from './lib.mjs';
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
@@ -13,18 +13,24 @@ export function describe(action) {
     case 'block': return `bloque   ${action.path}`;
     case 'json-ensure': return `ajuste   ${action.path} (${action.summary})`;
     case 'prune': return `limpieza ${action.path} (enlaces a skills que ya no existen)`;
+    case 'exclude': return `exclusión ${action.path} (${action.entries.length} rutas)`;
+    case 'skip': return `omitido  ${action.path} (${action.reason})`;
+    case 'empty-dirs': return `carpetas ${action.paths.length} creadas (se quitan al desinstalar si quedan vacías)`;
     default: throw new Error(`Acción desconocida: ${action.type}`);
   }
 }
 
 export function apply(action) {
   if (action.type === 'prune') return applyPrune(action);
+  if (action.type === 'skip') return 'omitido';
+  if (action.type === 'empty-dirs') return 'sin cambios';
   ensureParent(path.dirname(action.path));
   switch (action.type) {
     case 'link': return applyLink(action);
     case 'file': return applyFile(action);
     case 'block': return applyBlock(action);
     case 'json-ensure': return applyJsonEnsure(action);
+    case 'exclude': return applyExclude(action);
     default: throw new Error(`Acción desconocida: ${action.type}`);
   }
 }
@@ -35,7 +41,10 @@ export function revert(action) {
     case 'file': return isGenerated(action.path) ? (fs.rmSync(action.path), 'quitado') : 'sin cambios';
     case 'block': return removeBlock(action.path);
     case 'json-ensure': return revertJsonEnsure(action);
-    case 'prune': return 'sin cambios';
+    case 'exclude': return revertExclude(action);
+    case 'empty-dirs': return removeEmptyDirs(action);
+    case 'prune':
+    case 'skip': return 'sin cambios';
     default: throw new Error(`Acción desconocida: ${action.type}`);
   }
 }
@@ -164,7 +173,9 @@ function applyJsonEnsure({ path: filePath, ensure }) {
   return 'actualizado';
 }
 
-function revertJsonEnsure({ path: filePath, ensure }) {
+// Limitación conocida: si el usuario ya tenía alguno de estos valores, también se quita,
+// porque el JSON no guarda cuáles agregamos nosotros.
+function revertJsonEnsure({ path: filePath, ensure, removeIfEmpty }) {
   if (!fs.existsSync(filePath)) return 'sin cambios';
   const json = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   for (const [dotted, values] of Object.entries(ensure)) {
@@ -173,8 +184,39 @@ function revertJsonEnsure({ path: filePath, ensure }) {
     list.splice(0, list.length, ...kept);
     if (!list.length) removeKey(json, dotted);
   }
-  fs.writeFileSync(filePath, `${JSON.stringify(json, null, 2)}\n`);
+  if (removeIfEmpty && !Object.keys(json).length) fs.rmSync(filePath);
+  else fs.writeFileSync(filePath, `${JSON.stringify(json, null, 2)}\n`);
   return 'valores quitados';
+}
+
+/** Quita, de la más interna a la más externa, las carpetas vacías; nunca enlaces ni carpetas con contenido. */
+function removeEmptyDirs({ paths }) {
+  const removed = [];
+  for (const dir of paths) {
+    let stat;
+    try { stat = fs.lstatSync(dir); } catch { continue; }
+    if (!stat.isDirectory() || fs.readdirSync(dir).length) continue;
+    fs.rmdirSync(dir);
+    removed.push(path.basename(dir));
+  }
+  return removed.length ? `quitadas: ${removed.join(', ')}` : 'sin cambios';
+}
+
+function applyExclude({ path: filePath, entries }) {
+  const current = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+  const next = mergeExcludeBlock(current, entries);
+  if (next === current) return 'sin cambios';
+  fs.writeFileSync(filePath, next);
+  return 'actualizado';
+}
+
+function revertExclude({ path: filePath }) {
+  if (!fs.existsSync(filePath)) return 'sin cambios';
+  const current = fs.readFileSync(filePath, 'utf8');
+  const next = removeExcludeBlock(current);
+  if (next === current) return 'sin cambios';
+  if (next.trim()) fs.writeFileSync(filePath, next); else fs.rmSync(filePath);
+  return 'bloque quitado';
 }
 
 function removeKey(json, dotted) {

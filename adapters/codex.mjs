@@ -8,7 +8,7 @@ export default {
   label: 'Codex',
   plan(ctx) {
     return [
-      { type: 'block', path: path.join(ctx.home, '.codex', 'AGENTS.md'), content: buildGlobalInstructions(ctx) },
+      { type: 'block', path: path.join(ctx.root, '.codex', 'AGENTS.md'), content: buildGlobalInstructions(ctx) },
     ];
   },
 };

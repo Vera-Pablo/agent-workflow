@@ -14,7 +14,7 @@ export default {
   id: 'copilot',
   label: 'GitHub Copilot',
   plan(ctx) {
-    const base = path.join(ctx.home, '.copilot');
+    const base = path.join(ctx.root, '.copilot');
     const models = ctx.models.copilot ?? {};
     const actions = [
       { type: 'block', path: path.join(base, 'copilot-instructions.md'), content: buildGlobalInstructions(ctx) },

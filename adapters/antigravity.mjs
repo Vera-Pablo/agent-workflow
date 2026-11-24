@@ -11,12 +11,12 @@ export default {
   plan(ctx) {
     const content = buildGlobalInstructions(ctx);
     const actions = [
-      { type: 'block', path: path.join(ctx.home, '.gemini', 'GEMINI.md'), content },
+      { type: 'block', path: path.join(ctx.root, '.gemini', 'GEMINI.md'), content },
     ];
     for (const skill of ctx.skills) {
       actions.push({
         type: 'link',
-        path: path.join(ctx.home, '.gemini', 'config', 'skills', skill),
+        path: path.join(ctx.root, '.gemini', 'config', 'skills', skill),
         target: path.join(ctx.repoDir, 'skills', skill),
       });
     }

@@ -1,5 +1,7 @@
 // Claude Code: instrucciones en ~/.claude/CLAUDE.md, skills en ~/.claude/skills,
 // subagentes en ~/.claude/agents y confirmación obligatoria para git commit/push.
+// En modo proyecto (ctx.scope === 'project') todo va bajo la raíz del proyecto, en los
+// archivos locales que Claude Code no versiona: CLAUDE.local.md y .claude/settings.local.json.
 import path from 'node:path';
 import { GENERATED_NOTE, buildGlobalInstructions, yamlString } from '../scripts/lib.mjs';
 
@@ -13,15 +15,22 @@ export default {
   id: 'claude',
   label: 'Claude Code',
   plan(ctx) {
-    const base = path.join(ctx.home, '.claude');
+    const base = path.join(ctx.root, '.claude');
+    const isProject = ctx.scope === 'project';
     const models = ctx.models.claude ?? {};
     const actions = [
-      { type: 'block', path: path.join(base, 'CLAUDE.md'), content: buildGlobalInstructions(ctx) },
+      {
+        type: 'block',
+        path: isProject ? path.join(ctx.root, 'CLAUDE.local.md') : path.join(base, 'CLAUDE.md'),
+        content: buildGlobalInstructions(ctx),
+      },
       {
         type: 'json-ensure',
-        path: path.join(base, 'settings.json'),
+        path: path.join(base, isProject ? 'settings.local.json' : 'settings.json'),
         ensure: { 'permissions.ask': ['Bash(git commit:*)', 'Bash(git push:*)'] },
         summary: 'pedir confirmación antes de git commit / git push',
+        // Un settings.local.json vacío no aporta nada; el settings.json global se conserva siempre.
+        removeIfEmpty: isProject,
       },
     ];
     for (const skill of ctx.skills) {

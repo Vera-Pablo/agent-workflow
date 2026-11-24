@@ -5,6 +5,8 @@
 //   node scripts/install.mjs --apply         → instala
 //   node scripts/install.mjs --uninstall     → simula la desinstalación (agregá --apply para hacerla)
 //   node scripts/install.mjs --only claude,opencode
+//   node scripts/install.mjs --project [--dir <ruta>] → solo Claude Code, dentro del proyecto
+//   node scripts/install.mjs --init-only     → solo el enlace a la skill /init-workflow en ~/.claude
 //
 // Las skills y roles se enlazan (junctions) a este repo: después de un `git pull` ya están
 // actualizados. Volvé a correr el instalador solo si cambiaron core/, roles/ o se agregó una skill.
@@ -14,17 +16,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadRoles, loadSkillNames } from './lib.mjs';
 import { apply, describe, revert } from './actions.mjs';
+import { createDiskProbe, listTrackedPaths, omitForeign, planCommunitySkills, planProjectActions } from './project.mjs';
 
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PROJECT_TARGETS = ['claude'];
+const INIT_SKILL = 'init-workflow';
 
 function parseArgs(argv) {
-  const args = { apply: false, uninstall: false, only: null, home: os.homedir() };
+  const args = { apply: false, uninstall: false, only: null, home: os.homedir(), project: false, dir: process.cwd() };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--apply') args.apply = true;
     else if (arg === '--uninstall') args.uninstall = true;
     else if (arg === '--only') args.only = argv[++i].split(',').map((s) => s.trim());
     else if (arg === '--home') args.home = path.resolve(argv[++i]);
+    else if (arg === '--project') args.project = true;
+    else if (arg === '--init-only') args.initOnly = true;
+    else if (arg === '--dir') args.dir = path.resolve(argv[++i]);
     else if (arg === '--help' || arg === '-h') args.help = true;
     else throw new Error(`Argumento desconocido: ${arg}`);
   }
@@ -67,37 +75,97 @@ function hubActions(ctx) {
   return actions;
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.help) {
-    console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 9).join('\n').replaceAll('// ', ''));
-    return;
-  }
-  const config = loadConfig();
-  const targets = args.only ?? config.targets;
-  const ctx = {
+function sharedContext(config) {
+  return {
     repoDir,
-    home: args.home,
-    hubDir: path.join(args.home, '.agents', 'agent-workflow'),
     skills: loadSkillNames(repoDir),
     roles: loadRoles(repoDir),
     models: config.models ?? {},
     warnings: [],
   };
+}
 
+async function globalGroups(args, config) {
+  const hubDir = path.join(args.home, '.agents', 'agent-workflow');
+  const ctx = { ...sharedContext(config), home: args.home, root: args.home, scope: 'global', hubDir, rolesDir: path.join(hubDir, 'roles') };
   const groups = [{ label: 'Base común (~/.agents)', actions: hubActions(ctx) }];
-  for (const adapter of await loadAdapters(targets)) groups.push({ label: adapter.label, actions: adapter.plan(ctx) });
+  for (const adapter of await loadAdapters(args.only ?? config.targets)) groups.push({ label: adapter.label, actions: adapter.plan(ctx) });
+  return { ctx, groups, displayRoot: { path: args.home, alias: '~' } };
+}
+
+/** Modo global mínimo: solo el enlace a la skill que prepara cada proyecto; lo ajeno se omite. */
+function initOnlyGroups(args, config) {
+  const ctx = { ...sharedContext(config), skills: [INIT_SKILL], roles: [] };
+  const link = {
+    type: 'link',
+    path: path.join(args.home, '.claude', 'skills', INIT_SKILL),
+    target: path.join(repoDir, 'skills', INIT_SKILL),
+  };
+  const groups = [{ label: `Claude Code (solo /${INIT_SKILL})`, actions: omitForeign([link], createDiskProbe(args.home)) }];
+  return { ctx, groups, displayRoot: { path: args.home, alias: '~' } };
+}
+
+function selectGroups(args, config) {
+  if (args.project) return projectGroups(args, config);
+  if (args.initOnly) return initOnlyGroups(args, config);
+  return globalGroups(args, config);
+}
+
+/**
+ * Solo escribe dentro del proyecto; lo ajeno se omite y lo propio se excluye de git.
+ * Sin init-workflow: el proyecto ya quedó activado.
+ */
+async function projectGroups(args, config) {
+  const root = args.dir;
+  const gitDir = path.join(root, '.git');
+  if (!fs.existsSync(gitDir)) throw new Error(`${root} no es la raíz de un repositorio git (falta .git). No se modificó nada.`);
+  if (!fs.statSync(gitDir).isDirectory()) throw new Error(`${gitDir} no es una carpeta (worktree o submódulo): no soportado. No se modificó nada.`);
+  const shared = sharedContext(config);
+  const skills = shared.skills.filter((skill) => skill !== INIT_SKILL);
+  const ctx = { ...shared, skills, root, scope: 'project', rolesDir: path.join(repoDir, 'roles') };
+  const excludePath = path.join(gitDir, 'info', 'exclude');
+  const community = planCommunitySkills({
+    communityDir: path.join(repoDir, 'community-skills'),
+    workflowSkills: skills,
+    skillsRoot: path.join(root, '.claude', 'skills'),
+  });
+  ctx.warnings.push(...community.notInstalled.map((notice) => `Comunidad: ${notice}`));
+  const groups = [];
+  for (const adapter of await loadAdapters(PROJECT_TARGETS)) {
+    const actions = [...adapter.plan(ctx), ...community.actions];
+    const probe = createDiskProbe(root, listTrackedPaths(root, [...actions.map((action) => action.path), excludePath]));
+    groups.push({ label: adapter.label, actions: planProjectActions(actions, { root, excludePath, probe }) });
+  }
+  return { ctx, groups, displayRoot: { path: root, alias: '.' } };
+}
+
+function reportSkipped(groups) {
+  const skipped = groups.flatMap((group) => group.actions).filter((action) => action.type === 'skip');
+  if (!skipped.length) return;
+  console.log('Omitidos (ya existían y no son de agent-workflow; no se tocaron ni se excluyeron):');
+  for (const action of skipped) console.log(`  - ${action.path} (${action.reason})`);
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 11).join('\n').replaceAll('// ', ''));
+    return;
+  }
+  const config = loadConfig();
+  if (args.project && args.initOnly) throw new Error('--project y --init-only no se pueden combinar.');
+  const { ctx, groups, displayRoot } = await selectGroups(args, config);
 
   const mode = args.uninstall ? 'DESINSTALAR' : 'INSTALAR';
   console.log(`\nagent-workflow · ${mode} · ${args.apply ? 'aplicando cambios' : 'SIMULACIÓN (no se toca nada)'}`);
-  console.log(`Repo: ${repoDir}\nHome: ${ctx.home}\nSkills: ${ctx.skills.length} · Roles: ${ctx.roles.map((r) => r.name).join(', ')}\n`);
+  console.log(`Repo: ${repoDir}\nDestino: ${displayRoot.path}\nSkills: ${ctx.skills.length} · Roles: ${ctx.roles.map((r) => r.name).join(', ')}\n`);
 
   const ordered = args.uninstall ? [...groups].reverse() : groups;
   let failures = 0;
   for (const group of ordered) {
     console.log(`■ ${group.label}`);
     for (const action of args.uninstall ? [...group.actions].reverse() : group.actions) {
-      const line = `  ${describe(action).replace(ctx.home, '~')}`;
+      const line = `  ${describe(action).replace(displayRoot.path, displayRoot.alias)}`;
       if (!args.apply) { console.log(line); continue; }
       try {
         const result = args.uninstall ? revert(action) : apply(action);
@@ -110,6 +178,7 @@ async function main() {
     console.log('');
   }
   for (const warning of ctx.warnings) console.log(`⚠ ${warning}`);
+  reportSkipped(groups);
   if (!args.apply) console.log('Nada fue modificado. Para aplicar, repetí el comando con --apply.');
   else console.log(failures ? `Terminó con ${failures} error(es).` : 'Listo.');
   process.exitCode = failures ? 1 : 0;
