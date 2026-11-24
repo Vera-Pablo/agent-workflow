@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { GENERATED_NOTE } from './lib.mjs';
+import { GENERATED_NOTE, toAgentsLine } from './lib.mjs';
 
 const NOT_REGULAR_FILE = 'ya existe y no es un archivo común';
 
@@ -24,6 +24,7 @@ export function findForeignReason(action, probe) {
       return probe.kind === 'file' ? null : NOT_REGULAR_FILE;
     case 'json-ensure':
       if (probe.kind !== 'file') return NOT_REGULAR_FILE;
+      if (action.createOnly && !probe.ownExcluded) return 'ya existe: no se modifica ni se oculta';
       return isJson(probe.content) ? null : 'no es un JSON válido';
     default:
       return null;
@@ -34,8 +35,9 @@ function isJson(text) {
   try { JSON.parse(text); return true; } catch { return false; }
 }
 
-const COMMUNITY_INSTALLED_DIRS = ['claude', 'shared'];
-const CODEX_NOTICE = 'no instalada: Codex sin modo por proyecto';
+const COMMUNITY_SOURCES = ['claude', 'shared'];
+/** .agents/skills la leen también Codex y los demás agentes del estándar abierto. */
+export const SHARED_COMMUNITY_SOURCES = [...COMMUNITY_SOURCES, 'codex'];
 
 function listSkillDirs(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -45,13 +47,13 @@ function listSkillDirs(dir) {
 }
 
 /**
- * Skills de la comunidad para Claude Code (claude/ y luego shared/). Ante un nombre repetido gana
- * la del workflow, o la primera encontrada; la otra pasa a `skip`. Las de codex/ solo se informan.
+ * Skills de la comunidad, en el orden de `sources`. Ante un nombre repetido gana la del workflow,
+ * o la primera encontrada; la otra pasa a `skip`.
  */
-export function planCommunitySkills({ communityDir, workflowSkills, skillsRoot }) {
+export function planCommunitySkills({ communityDir, workflowSkills, skillsRoot, sources = COMMUNITY_SOURCES }) {
   const taken = new Set(workflowSkills);
   const actions = [];
-  for (const sub of COMMUNITY_INSTALLED_DIRS) {
+  for (const sub of sources) {
     for (const { name, dir } of listSkillDirs(path.join(communityDir, sub))) {
       const skillPath = path.join(skillsRoot, name);
       if (taken.has(name)) {
@@ -62,22 +64,47 @@ export function planCommunitySkills({ communityDir, workflowSkills, skillsRoot }
       actions.push({ type: 'link', path: skillPath, target: dir });
     }
   }
-  const notInstalled = listSkillDirs(path.join(communityDir, 'codex')).map(({ name }) => `${name} (${CODEX_NOTICE})`);
-  return { actions, notInstalled };
+  return actions;
 }
 
 /**
- * Reemplaza los destinos ajenos por acciones `skip`, agrega la exclusión de los propios y,
- * al principio (se revierte al final), las carpetas creadas a limpiar si quedan vacías.
+ * En cada grupo reemplaza los destinos ajenos por acciones `skip` y agrega al principio (se revierte
+ * al final) las carpetas a limpiar si quedan vacías. Suma un último grupo con una sola exclusión.
+ * `kept`: grupos de agentes ya instalados que no se tocan; sus rutas siguen en el bloque.
+ * La exclusión aplica `entries` (todo lo instalado, con la línea de `agents`) y al revertir
+ * deja `remaining` (solo lo de `kept` y `keptAgents`); el bloque desaparece si queda vacío.
  */
-export function planProjectActions(actions, { root, excludePath, probe }) {
-  const planned = omitForeign(actions, probe);
-  const own = planned.filter((action) => action.type !== 'skip');
-  const exclude = { type: 'exclude', path: excludePath, entries: own.map((action) => toExcludeEntry(root, action.path)) };
-  const parents = new Set(own.flatMap((action) => parentsBetween(root, action.path)));
-  const deepestFirst = [...parents].sort((a, b) => b.length - a.length);
-  return [{ type: 'empty-dirs', paths: deepestFirst }, ...planned, ...omitForeign([exclude], probe)];
+export function planProjectGroups(groups, { root, excludePath, probe, kept = [], agents = [], keptAgents = [] }) {
+  const planGroup = ({ label, actions }) => {
+    const checked = omitOrphans(omitForeign(actions, probe));
+    const parents = new Set(ownActions(checked).flatMap((action) => parentsBetween(root, action.path)));
+    const deepestFirst = [...parents].sort((a, b) => b.length - a.length);
+    return { label, actions: [{ type: 'empty-dirs', paths: deepestFirst }, ...checked] };
+  };
+  const planned = groups.map(planGroup);
+  const keptPlanned = kept.map(planGroup);
+  const entriesOf = (plannedGroups, agentIds) => [
+    ...(agentIds.length ? [toAgentsLine(agentIds)] : []),
+    ...ownActions(plannedGroups.flatMap((group) => group.actions)).map((action) => toExcludeEntry(root, action.path)),
+  ];
+  const exclude = {
+    type: 'exclude',
+    path: excludePath,
+    entries: entriesOf([...planned, ...keptPlanned], agents),
+    remaining: entriesOf(keptPlanned, keptAgents),
+  };
+  return [...planned, { label: 'Exclusión en git (.git/info/exclude)', actions: omitForeign([exclude], probe) }];
 }
+
+/** Omite las acciones cuyo `requires.path` quedó omitido: sin él no servirían. */
+function omitOrphans(actions) {
+  const skipped = new Set(actions.filter((action) => action.type === 'skip').map((action) => action.path));
+  return actions.map((action) => (action.requires && skipped.has(action.requires.path)
+    ? { type: 'skip', path: action.path, reason: action.requires.reason }
+    : action));
+}
+
+const ownActions = (actions) => actions.filter((action) => action.type !== 'skip' && action.type !== 'empty-dirs');
 
 /** Reemplaza por acciones `skip` los destinos que ya existen y no son nuestros. */
 export function omitForeign(actions, probe) {
@@ -99,15 +126,23 @@ function parentsBetween(root, target) {
 const toRelative = (root, target) => path.relative(root, target).split(path.sep).join('/');
 const toExcludeEntry = (root, target) => `/${toRelative(root, target)}`;
 
-/** `tracked`: rutas versionadas en git, relativas a `root` (ver listTrackedPaths). */
-export function createDiskProbe(root, tracked = []) {
+/**
+ * `tracked`: rutas versionadas en git, relativas a `root` (ver listTrackedPaths).
+ * `ownExcluded`: entradas del bloque administrado de .git/info/exclude (ver readExcludeBlock).
+ */
+export function createDiskProbe(root, tracked = [], ownExcluded = []) {
   // Una raíz que aún no existe no tiene carpetas padre que puedan ser enlaces.
   const realRoot = fs.existsSync(root) ? fs.realpathSync(root) : path.resolve(root);
   return (target) => {
     const relative = toRelative(root, target);
     const isTracked = tracked.some((file) => file === relative || file.startsWith(`${relative}/`));
     const escapingParent = findEscapingParent(root, realRoot, target);
-    return { ...inspectPath(target), tracked: isTracked, ...(escapingParent && { escapingParent }) };
+    return {
+      ...inspectPath(target),
+      tracked: isTracked,
+      ownExcluded: ownExcluded.includes(toExcludeEntry(root, target)),
+      ...(escapingParent && { escapingParent }),
+    };
   };
 }
 

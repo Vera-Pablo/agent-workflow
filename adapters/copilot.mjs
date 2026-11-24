@@ -1,7 +1,8 @@
 // GitHub Copilot CLI: instrucciones en ~/.copilot/copilot-instructions.md y agentes en
 // ~/.copilot/agents/*.agent.md. Lee las skills de forma nativa desde ~/.agents/skills.
+// En modo proyecto: .github/copilot-instructions.md (solo si no existe) y .github/agents.
 import path from 'node:path';
-import { GENERATED_NOTE, buildGlobalInstructions, yamlString } from '../scripts/lib.mjs';
+import { GENERATED_NOTE, buildGeneratedRules, buildGlobalInstructions, yamlString } from '../scripts/lib.mjs';
 
 const TOOLS = {
   coordinator: ['read', 'search', 'edit', 'execute', 'agent'],
@@ -14,10 +15,14 @@ export default {
   id: 'copilot',
   label: 'GitHub Copilot',
   plan(ctx) {
-    const base = path.join(ctx.root, '.copilot');
+    const isProject = ctx.scope === 'project';
+    const base = path.join(ctx.root, isProject ? '.github' : '.copilot');
     const models = ctx.models.copilot ?? {};
+    const rulesPath = path.join(base, 'copilot-instructions.md');
     const actions = [
-      { type: 'block', path: path.join(base, 'copilot-instructions.md'), content: buildGlobalInstructions(ctx) },
+      isProject
+        ? { type: 'file', path: rulesPath, content: buildGeneratedRules(ctx) }
+        : { type: 'block', path: rulesPath, content: buildGlobalInstructions(ctx) },
     ];
     for (const role of ctx.roles) {
       const model = models[role.tier];

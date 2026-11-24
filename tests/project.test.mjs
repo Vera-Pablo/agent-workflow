@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GENERATED_NOTE, EXCLUDE_START, mergeExcludeBlock, removeExcludeBlock } from '../scripts/lib.mjs';
-import { createDiskProbe, findForeignReason, planCommunitySkills, planProjectActions } from '../scripts/project.mjs';
+import { createDiskProbe, findForeignReason, planCommunitySkills, planProjectGroups } from '../scripts/project.mjs';
 import { apply, revert } from '../scripts/actions.mjs';
 import claude from '../adapters/claude.mjs';
 
@@ -54,19 +54,35 @@ test('findForeignReason distingue destinos propios de ajenos', () => {
   assert.ok(findForeignReason(json, { kind: 'file', content: '{roto', tracked: false }));
 });
 
-test('planProjectActions omite ajenos y excluye solo las rutas propias', () => {
+test('planProjectGroups omite ajenos y excluye solo las rutas propias', () => {
   const root = path.resolve('/p');
   const own = { type: 'block', path: path.join(root, 'CLAUDE.local.md'), content: 'x' };
   const foreign = { type: 'link', path: path.join(root, '.claude', 'skills', 'sdd'), target: path.resolve('/repo/skills/sdd') };
   const excludePath = path.join(root, '.git', 'info', 'exclude');
   const probe = (p) => (p === foreign.path ? { kind: 'dir', tracked: false } : missing);
 
-  const planned = planProjectActions([own, foreign], { root, excludePath, probe });
+  const [group, exclusion] = planProjectGroups([{ label: 'g', actions: [own, foreign] }], { root, excludePath, probe });
 
-  assert.deepEqual(planned.map((a) => a.type), ['empty-dirs', 'block', 'skip', 'exclude']);
-  assert.deepEqual(planned[0].paths, []);
-  assert.equal(planned[2].path, foreign.path);
-  assert.deepEqual(planned[3], { type: 'exclude', path: excludePath, entries: ['/CLAUDE.local.md'] });
+  assert.deepEqual(group.actions.map((a) => a.type), ['empty-dirs', 'block', 'skip']);
+  assert.deepEqual(group.actions[0].paths, []);
+  assert.equal(group.actions[2].path, foreign.path);
+  assert.deepEqual(exclusion.actions, [{ type: 'exclude', path: excludePath, entries: ['/CLAUDE.local.md'], remaining: [] }]);
+});
+
+test('planProjectGroups reúne en una sola exclusión las rutas propias de todos los grupos', () => {
+  const root = path.resolve('/p');
+  const excludePath = path.join(root, '.git', 'info', 'exclude');
+  const groups = [
+    { label: 'a', actions: [{ type: 'block', path: path.join(root, 'CLAUDE.local.md'), content: 'x' }] },
+    { label: 'b', actions: [{ type: 'file', path: path.join(root, '.bob', 'rules', 'x.md'), content: 'x' }] },
+  ];
+
+  const planned = planProjectGroups(groups, { root, excludePath, probe: () => missing });
+
+  assert.equal(planned.length, 3);
+  assert.deepEqual(planned[1].actions[0].paths, [path.join(root, '.bob', 'rules'), path.join(root, '.bob')]);
+  const exclusions = planned.flatMap((g) => g.actions).filter((a) => a.type === 'exclude');
+  assert.deepEqual(exclusions, [{ type: 'exclude', path: excludePath, entries: ['/CLAUDE.local.md', '/.bob/rules/x.md'], remaining: [] }]);
 });
 
 test('el adaptador de Claude en modo proyecto escribe solo bajo la raíz y referencia los roles del repo', () => {
@@ -245,23 +261,32 @@ function makeCommunity(layout) {
   return dir;
 }
 
-test('planCommunitySkills enlaza claude y shared, cede ante conflictos y lista codex como no instalada', (t) => {
+test('planCommunitySkills enlaza claude y shared, cede ante conflictos y no instala codex por defecto', (t) => {
   const communityDir = makeCommunity({ claude: ['a', 'sdd', 'dup'], shared: ['b', 'dup'], codex: ['c'] });
   t.after(() => fs.rmSync(communityDir, { recursive: true, force: true }));
   const skillsRoot = path.resolve('/p/.claude/skills');
 
-  const { actions, notInstalled } = planCommunitySkills({ communityDir, workflowSkills: ['sdd'], skillsRoot });
+  const actions = planCommunitySkills({ communityDir, workflowSkills: ['sdd'], skillsRoot });
 
   const summary = actions.map((a) => `${a.type}:${path.basename(a.path)}`).sort();
   assert.deepEqual(summary, ['link:a', 'link:b', 'link:dup', 'skip:dup', 'skip:sdd']);
-  assert.equal(actions.find((a) => a.name === undefined && a.path.endsWith('dup') && a.type === 'link').target, path.join(communityDir, 'claude', 'dup'));
-  assert.equal(notInstalled.length, 1);
-  assert.match(notInstalled[0], /^c .*Codex sin modo por proyecto/);
+  assert.equal(actions.find((a) => a.path.endsWith('dup') && a.type === 'link').target, path.join(communityDir, 'claude', 'dup'));
+});
+
+test('planCommunitySkills instala codex solo si se pide entre los orígenes', (t) => {
+  const communityDir = makeCommunity({ claude: ['a'], codex: ['c', 'a'] });
+  t.after(() => fs.rmSync(communityDir, { recursive: true, force: true }));
+  const skillsRoot = path.resolve('/p/.agents/skills');
+
+  const actions = planCommunitySkills({ communityDir, workflowSkills: [], skillsRoot, sources: ['claude', 'shared', 'codex'] });
+
+  const summary = actions.map((a) => `${a.type}:${path.basename(a.path)}`).sort();
+  assert.deepEqual(summary, ['link:a', 'link:c', 'skip:a']);
 });
 
 test('planCommunitySkills no falla si community-skills no existe', () => {
   const result = planCommunitySkills({ communityDir: path.join(os.tmpdir(), 'aw-no-existe'), workflowSkills: [], skillsRoot: '/p' });
-  assert.deepEqual(result, { actions: [], notInstalled: [] });
+  assert.deepEqual(result, []);
 });
 
 test('las skills de la comunidad se enlazan, se excluyen y se quitan al desinstalar', (t) => {
@@ -271,9 +296,9 @@ test('las skills de la comunidad se enlazan, se excluyen y se quitan al desinsta
     fs.rmSync(communityDir, { recursive: true, force: true });
     fs.rmSync(root, { recursive: true, force: true });
   });
-  const { actions } = planCommunitySkills({ communityDir, workflowSkills: [], skillsRoot: path.join(root, '.claude', 'skills') });
+  const actions = planCommunitySkills({ communityDir, workflowSkills: [], skillsRoot: path.join(root, '.claude', 'skills') });
   const excludePath = path.join(root, '.git', 'info', 'exclude');
-  const planned = planProjectActions(actions, { root, excludePath, probe: createDiskProbe(root) });
+  const planned = planProjectGroups([{ label: 'g', actions }], { root, excludePath, probe: createDiskProbe(root) }).flatMap((g) => g.actions);
 
   planned.forEach(apply);
 

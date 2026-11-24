@@ -5,7 +5,7 @@
 //   node scripts/install.mjs --apply         → instala
 //   node scripts/install.mjs --uninstall     → simula la desinstalación (agregá --apply para hacerla)
 //   node scripts/install.mjs --only claude,opencode
-//   node scripts/install.mjs --project [--dir <ruta>] → solo Claude Code, dentro del proyecto
+//   node scripts/install.mjs --project [--dir <ruta>] [--only claude,qwen] → dentro del proyecto
 //   node scripts/install.mjs --init-only     → solo el enlace a la skill /init-workflow en ~/.claude
 //
 // Las skills y roles se enlazan (junctions) a este repo: después de un `git pull` ya están
@@ -14,12 +14,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRoles, loadSkillNames } from './lib.mjs';
+import { loadRoles, loadSkillNames, readExcludeBlock, readInstalledAgents, skillLinks } from './lib.mjs';
 import { apply, describe, revert } from './actions.mjs';
-import { createDiskProbe, listTrackedPaths, omitForeign, planCommunitySkills, planProjectActions } from './project.mjs';
+import {
+  SHARED_COMMUNITY_SOURCES, createDiskProbe, listTrackedPaths, omitForeign, planCommunitySkills, planProjectGroups,
+} from './project.mjs';
 
 const repoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PROJECT_TARGETS = ['claude'];
+const PROJECT_TARGETS = ['claude', 'opencode', 'copilot', 'antigravity', 'qwen', 'bob', 'kimi', 'codex', 'minimax'];
 const INIT_SKILL = 'init-workflow';
 
 function parseArgs(argv) {
@@ -120,22 +122,49 @@ async function projectGroups(args, config) {
   const gitDir = path.join(root, '.git');
   if (!fs.existsSync(gitDir)) throw new Error(`${root} no es la raíz de un repositorio git (falta .git). No se modificó nada.`);
   if (!fs.statSync(gitDir).isDirectory()) throw new Error(`${gitDir} no es una carpeta (worktree o submódulo): no soportado. No se modificó nada.`);
+  const targets = args.only ?? PROJECT_TARGETS;
+  const unsupported = targets.filter((id) => !PROJECT_TARGETS.includes(id));
+  if (unsupported.length) {
+    throw new Error(`--project no admite: ${unsupported.join(', ')}. Opciones: ${PROJECT_TARGETS.join(', ')}. No se modificó nada.`);
+  }
   const shared = sharedContext(config);
   const skills = shared.skills.filter((skill) => skill !== INIT_SKILL);
   const ctx = { ...shared, skills, root, scope: 'project', rolesDir: path.join(repoDir, 'roles') };
-  const excludePath = path.join(gitDir, 'info', 'exclude');
-  const community = planCommunitySkills({
-    communityDir: path.join(repoDir, 'community-skills'),
-    workflowSkills: skills,
-    skillsRoot: path.join(root, '.claude', 'skills'),
+  const communityLinks = (skillsRoot, sources) => planCommunitySkills({
+    communityDir: path.join(repoDir, 'community-skills'), workflowSkills: skills, skillsRoot, sources,
   });
-  ctx.warnings.push(...community.notInstalled.map((notice) => `Comunidad: ${notice}`));
-  const groups = [];
-  for (const adapter of await loadAdapters(PROJECT_TARGETS)) {
-    const actions = [...adapter.plan(ctx), ...community.actions];
-    const probe = createDiskProbe(root, listTrackedPaths(root, [...actions.map((action) => action.path), excludePath]));
-    groups.push({ label: adapter.label, actions: planProjectActions(actions, { root, excludePath, probe }) });
+  const planAgents = async (ids, agentCtx) => {
+    const groups = [];
+    let usesSharedSkills = false;
+    for (const adapter of await loadAdapters(ids)) {
+      const actions = adapter.plan(agentCtx);
+      if (adapter.projectSkillsDir) actions.push(...communityLinks(path.join(root, adapter.projectSkillsDir)));
+      else usesSharedSkills = true;
+      groups.push({ label: adapter.label, actions });
+    }
+    return { groups, usesSharedSkills };
+  };
+  const excludePath = path.join(gitDir, 'info', 'exclude');
+  const ownExcluded = fs.existsSync(excludePath) ? readExcludeBlock(fs.readFileSync(excludePath, 'utf8')) : [];
+  const keptAgents = readInstalledAgents(ownExcluded).filter((id) => PROJECT_TARGETS.includes(id) && !targets.includes(id));
+  const selected = await planAgents(targets, ctx);
+  // Los agentes que siguen instalados solo aportan sus rutas al bloque: sus avisos no se muestran.
+  const kept = await planAgents(keptAgents, { ...ctx, warnings: [] });
+  // .agents/skills se desinstala solo si ningún agente que sigue instalado la usa.
+  const sharedSkillsOwner = args.uninstall
+    ? (kept.usesSharedSkills ? kept : selected.usesSharedSkills && selected)
+    : (selected.usesSharedSkills ? selected : kept.usesSharedSkills && kept);
+  if (sharedSkillsOwner) {
+    const skillsRoot = path.join(root, '.agents', 'skills');
+    const actions = [...skillLinks(ctx, skillsRoot), ...communityLinks(skillsRoot, SHARED_COMMUNITY_SOURCES)];
+    sharedSkillsOwner.groups.push({ label: 'Skills compartidas (.agents/skills)', actions });
   }
+  const paths = [...selected.groups, ...kept.groups].flatMap((group) => group.actions.map((action) => action.path));
+  const probe = createDiskProbe(root, listTrackedPaths(root, [...paths, excludePath]), ownExcluded);
+  const agents = PROJECT_TARGETS.filter((id) => targets.includes(id) || keptAgents.includes(id));
+  const planned = planProjectGroups(selected.groups, { root, excludePath, probe, kept: kept.groups, agents, keptAgents });
+  // Al desinstalar los grupos se recorren al revés: la exclusión, primera, se revierte al final.
+  const groups = args.uninstall ? [planned.pop(), ...planned] : planned;
   return { ctx, groups, displayRoot: { path: root, alias: '.' } };
 }
 

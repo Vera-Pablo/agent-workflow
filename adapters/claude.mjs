@@ -14,6 +14,7 @@ const TOOLS = {
 export default {
   id: 'claude',
   label: 'Claude Code',
+  projectSkillsDir: path.join('.claude', 'skills'),
   plan(ctx) {
     const base = path.join(ctx.root, '.claude');
     const isProject = ctx.scope === 'project';

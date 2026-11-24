@@ -210,13 +210,14 @@ function applyExclude({ path: filePath, entries }) {
   return 'actualizado';
 }
 
-function revertExclude({ path: filePath }) {
+/** Deja en el bloque solo `remaining` (lo de los agentes que siguen instalados) o lo quita. */
+function revertExclude({ path: filePath, remaining = [] }) {
   if (!fs.existsSync(filePath)) return 'sin cambios';
   const current = fs.readFileSync(filePath, 'utf8');
-  const next = removeExcludeBlock(current);
+  const next = remaining.length ? mergeExcludeBlock(current, remaining) : removeExcludeBlock(current);
   if (next === current) return 'sin cambios';
   if (next.trim()) fs.writeFileSync(filePath, next); else fs.rmSync(filePath);
-  return 'bloque quitado';
+  return remaining.length ? 'actualizado' : 'bloque quitado';
 }
 
 function removeKey(json, dotted) {

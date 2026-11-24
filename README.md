@@ -24,11 +24,26 @@ El agente nunca decide solo qué construir ni da algo por terminado sin el desar
 ## Cómo funciona
 
 El workflow **no se activa solo**. En la máquina solo queda el comando `/init-workflow`. Al
-ejecutarlo dentro de un proyecto se instalan ahí, excluidos de git vía `.git/info/exclude`:
-`CLAUDE.local.md`, las skills enlazadas en `.claude/skills`, los subagentes de los roles en
-`.claude/agents` y `.claude/settings.local.json` (pide confirmación antes de commit/push).
-Después, `/init-project` crea `AGENTS.md`, `MEMORY.md`, `specs/` y la constitución del
-proyecto.
+ejecutarlo dentro de un proyecto se instalan ahí, excluidos de git vía `.git/info/exclude`,
+los archivos de cada agente:
+
+- **Claude Code:** `CLAUDE.local.md`, skills en `.claude/skills`, roles en `.claude/agents` y
+  permisos en `.claude/settings.local.json` (pide confirmación antes de commit/push).
+- **Skills comunes** (Codex, OpenCode, Copilot, Antigravity, Kimi, MiniMax): `.agents/skills`;
+  Bob en `.bob/skills` y Qwen en `.qwen/skills`.
+- **OpenCode:** reglas en `.opencode/agent-workflow.md`, instrucciones en
+  `.opencode/opencode.json` y roles en `.opencode/agents`. Si `.opencode/opencode.json` ya
+  existe, no se modifica: se omiten `opencode.json` y `agent-workflow.md` (los roles se
+  instalan igual).
+- **Antigravity:** `.agents/rules/agent-workflow.md`. **Qwen:** `.qwen/QWEN.local.md`.
+  **Bob:** `.bob/rules/agent-workflow.md`.
+- **GitHub Copilot:** solo si no existen, `.github/copilot-instructions.md` y roles en
+  `.github/agents/<rol>.agent.md`. **Kimi:** solo si no existe, `.kimi-code/AGENTS.md`.
+- **Codex y MiniMax:** solo skills; sus reglas se leen de `AGENTS.md` versionado.
+
+`--only <lista>` limita la instalación a los agentes indicados: `claude`, `opencode`,
+`copilot`, `antigravity`, `qwen`, `bob`, `kimi`, `codex`, `minimax`. Después, `/init-project`
+crea `AGENTS.md`, `MEMORY.md`, `specs/` y la constitución del proyecto.
 
 Ejemplo del flujo SDD: *"Quiero poder registrar ventas a crédito."*
 
@@ -88,9 +103,9 @@ agent-workflow/
 │   └── sdd-validate/           # valida la implementación contra la spec
 ├── community-skills/
 │   ├── claude/                 # skills de la comunidad para Claude Code
-│   ├── codex/                  # skills de la comunidad para Codex (aún no se instalan)
+│   ├── codex/                  # skills de la comunidad para Codex (van a .agents/skills)
 │   └── shared/                 # skills de la comunidad para cualquier agente
-├── adapters/                   # traducción a claude, opencode, codex, copilot y antigravity
+├── adapters/                   # traducción a los 9 agentes del modo por proyecto
 ├── scripts/
 │   ├── install.mjs             # CLI: instalar, desinstalar, modo global y por proyecto
 │   ├── project.mjs             # planificación y exclusiones del modo por proyecto
@@ -125,6 +140,7 @@ node scripts/install.mjs --uninstall --apply
 # equivalente desde el proyecto:
 node <repo>/scripts/install.mjs --project           # simulación
 node <repo>/scripts/install.mjs --project --apply   # aplica
+node <repo>/scripts/install.mjs --project --only claude,qwen --apply  # solo esos agentes
 ```
 
 Revertir la activación:
@@ -141,8 +157,10 @@ node <repo>/scripts/install.mjs --project --uninstall --apply
 3. Leela antes de agregarla: es texto que la IA obedece.
 
 Se activan al correr `/init-workflow` o al reinstalar con `--project --apply`. Las de
-`codex/` aún no se instalan porque Codex no tiene modo por proyecto. Si el nombre choca con
-una skill del workflow, gana la del workflow.
+`claude/` y `shared/` van a `.claude/skills`, `.agents/skills`, `.bob/skills` y `.qwen/skills`;
+las de `codex/`, solo a `.agents/skills`. Si el nombre choca con una skill del workflow, gana
+la del workflow.
+Usá `--only claude,codex` (o la lista de agentes que quieras) para no reinstalar todo.
 
 ### 4. Usar el modo autónomo
 
@@ -160,4 +178,17 @@ Las skills quedan enlazadas al repo, así que se actualizan con el `git pull`. L
 
 ## Alcance actual
 
-El modo por proyecto soporta solo Claude Code.
+| Agente | Reglas | Skills | Roles |
+|---|---|---|---|
+| Claude Code | `CLAUDE.local.md` | `.claude/skills` | `.claude/agents` |
+| OpenCode | `.opencode/agent-workflow.md` + `opencode.json` | `.agents/skills` | `.opencode/agents` |
+| Copilot | `.github/copilot-instructions.md` (solo si falta) | `.agents/skills` | `.github/agents/<rol>.agent.md` (solo si falta) |
+| Antigravity | `.agents/rules/agent-workflow.md` | `.agents/skills` | — |
+| Qwen | `.qwen/QWEN.local.md` | `.qwen/skills` | — |
+| Bob | `.bob/rules/agent-workflow.md` | `.bob/skills` | — |
+| Kimi | `.kimi-code/AGENTS.md` (solo si falta) | `.agents/skills` | — |
+| Codex | — (lee `AGENTS.md` versionado) | `.agents/skills` | — |
+| MiniMax | — (lee `AGENTS.md` versionado) | `.agents/skills` | — |
+
+OpenCode, Copilot y MiniMax leen `.claude/skills` y `.agents/skills`, y Copilot también
+`.claude/agents`: pueden ver skills o roles duplicados.
